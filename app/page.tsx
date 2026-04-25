@@ -19,7 +19,7 @@ function Home() {
         <h3>Featured Events</h3>
         <ul className="events">
           {eventCardsdata.map((event) => (
-            <li key={event.slug}>
+            <li key={event.slug} className="list-none">
               <EventCard {...event} />
             </li>
           ))}
