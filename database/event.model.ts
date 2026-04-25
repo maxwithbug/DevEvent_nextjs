@@ -190,8 +190,6 @@ const EventSchema = new Schema<IEvent>(
   }
 );
 
-EventSchema.index({ slug: 1 }, { unique: true });
-
 EventSchema.pre("save", function (next) {
   const doc = this as EventDocument;
 

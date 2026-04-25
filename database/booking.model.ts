@@ -44,8 +44,6 @@ const BookingSchema = new Schema<IBooking>(
   }
 );
 
-BookingSchema.index({ eventId: 1 });
-
 BookingSchema.pre("save", async function (next) {
   const doc = this as BookingDocument;
 
