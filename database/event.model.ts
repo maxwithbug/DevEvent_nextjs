@@ -237,7 +237,11 @@ EventSchema.pre("save", function (next) {
 
   // Keep URL slug in sync with title, but only when title changes.
   if (doc.isModified("title")) {
-    doc.slug = toSlug(doc.title);
+    const slug = toSlug(doc.title);
+    if (!slug) {
+      return next(new Error("Title must contain slug-compatible characters."));
+    }
+    doc.slug = slug;
   }
 
   // Normalize date and time into a consistent storage format.
