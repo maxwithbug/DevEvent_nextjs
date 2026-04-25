@@ -44,21 +44,21 @@ const BookingSchema = new Schema<IBooking>(
   }
 );
 
-BookingSchema.pre("save", async function (next) {
+BookingSchema.pre("save", async function () {
   const doc = this as BookingDocument;
 
-  // Ensure this booking always points to an existing event.
-  const eventExists = await Event.exists({ _id: doc.eventId });
-  if (!eventExists) {
-    return next(new Error("Referenced event does not exist."));
+  // Ensure this booking points to an existing event when eventId changes.
+  if (doc.isModified("eventId")) {
+    const eventExists = await Event.exists({ _id: doc.eventId });
+    if (!eventExists) {
+      throw new Error("Referenced event does not exist.");
+    }
   }
 
   // Keep email format strict even if input comes from unchecked sources.
   if (!emailPattern.test(doc.email)) {
-    return next(new Error("Email must be a valid email address."));
+    throw new Error("Email must be a valid email address.");
   }
-
-  return next();
 });
 
 const Booking: Model<IBooking> =

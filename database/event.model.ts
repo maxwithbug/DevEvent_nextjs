@@ -42,11 +42,28 @@ const toSlug = (value: string): string =>
     .replace(/^-|-$/g, "");
 
 const normalizeDateToIso = (value: string): string => {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
     throw new Error("Date must be a valid date string.");
   }
-  return parsed.toISOString();
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const utcDate = new Date(Date.UTC(year, month - 1, day));
+
+  if (
+    utcDate.getUTCFullYear() !== year ||
+    utcDate.getUTCMonth() !== month - 1 ||
+    utcDate.getUTCDate() !== day
+  ) {
+    throw new Error("Date must be a valid date string.");
+  }
+
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(
+    2,
+    "0"
+  )}-${String(day).padStart(2, "0")}`;
 };
 
 const normalizeTime = (value: string): string => {
