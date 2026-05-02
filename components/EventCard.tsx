@@ -10,11 +10,11 @@ interface EventCardProps {
   image: string;
   slug: string;
   location: string;
-  day: string;
+  date: string;
   time: string;
 }
 
-function EventCard({ title, image, slug, location, day, time }: EventCardProps) {
+function EventCard({ title, image, slug, location, date, time }: EventCardProps) {
   return (
     <Link
       href={`/events/${slug}`}
@@ -24,7 +24,7 @@ function EventCard({ title, image, slug, location, day, time }: EventCardProps) 
           event_title: title,
           event_slug: slug,
           event_location: location,
-          event_day: day,
+          event_date: date,
         })
       }
     >
@@ -45,7 +45,7 @@ function EventCard({ title, image, slug, location, day, time }: EventCardProps) 
                     height={14}
                     width={14}
                   />
-                  <p className='day'>{day}</p>
+                  <p className='day'>{date}</p>
               </div>
               <div>
                   <Image
