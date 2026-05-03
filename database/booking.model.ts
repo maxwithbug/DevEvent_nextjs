@@ -44,6 +44,8 @@ const BookingSchema = new Schema<IBooking>(
   }
 );
 
+BookingSchema.index({ eventId: 1, email: 1 }, { unique: true });
+
 BookingSchema.pre("save", async function () {
   const doc = this as BookingDocument;
 

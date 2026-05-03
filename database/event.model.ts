@@ -189,7 +189,8 @@ EventSchema.pre("save", async function () {
   ] as const;
 
   for (const field of requiredFields) {
-    if (doc[field].trim().length === 0) {
+    const value = doc[field];
+    if (typeof value !== "string" || value.trim().length === 0) {
       throw new Error(`${field} is required.`);
     }
   }
@@ -203,8 +204,14 @@ EventSchema.pre("save", async function () {
   }
 
   if (doc.isModified("title")) {
-    const slug = toSlug(doc.title);
-    if (!slug) throw new Error("Title must contain slug-compatible characters.");
+    const baseSlug = toSlug(doc.title);
+    if (!baseSlug) throw new Error("Title must contain slug-compatible characters.");
+    const EventModel = this.constructor as Model<IEvent>;
+    let slug = baseSlug;
+    let counter = 1;
+    while (await EventModel.exists({ slug, _id: { $ne: doc._id } })) {
+      slug = `${baseSlug}-${counter++}`;
+    }
     doc.slug = slug;
   }
 

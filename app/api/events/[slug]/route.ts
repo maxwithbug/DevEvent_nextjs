@@ -1,4 +1,4 @@
-import { Event } from "@/database";
+import { Booking, Event } from "@/database";
 import connectToDatabase from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -53,7 +53,11 @@ export async function GET(
             );
         }
 
-        return NextResponse.json({ event }, { status: 200 });
+        const bookingCount = await Booking.countDocuments({
+            eventId: event._id,
+        });
+
+        return NextResponse.json({ event, bookingCount }, { status: 200 });
     } catch (error) {
         console.error("[events/[slug]/route] GET error:", error);
         return NextResponse.json(

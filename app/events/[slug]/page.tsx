@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import React from "react";
 import { headers } from "next/headers";
 import Image from "next/image";
+import BookEvent from "@/components/BookEvent";
+
 
 type EventDetail = {
   title?: string;
@@ -33,7 +35,9 @@ const EventDetailsItem = ({
     <div className="flex items-start gap-3 rounded-lg border border-white/10 bg-black/20 p-3">
       <Image src={icon} alt={alt} width={20} height={20} />
       <div className="space-y-0.5">
-        <p className="text-xs uppercase tracking-wide text-light-200">{labelTitle}</p>
+        <p className="text-xs uppercase tracking-wide text-light-200">
+          {labelTitle}
+        </p>
         <p className="text-sm text-light-100">{label}</p>
       </div>
     </div>
@@ -46,7 +50,7 @@ const EventAgenda = ({ agendaItems }: { agendaItems: string[] }) => {
   return (
     <div className="agenda rounded-xl border border-white/10 bg-black/20 p-5">
       <h2>Event Agenda</h2>
-      <ul className="mt-3 list-disc list-inside space-y-2">
+      <ul className="mt-3 list-disc list-inside space-y-2 ">
         {agendaItems.map((item, index) => (
           <li key={index}>{item}</li>
         ))}
@@ -55,8 +59,34 @@ const EventAgenda = ({ agendaItems }: { agendaItems: string[] }) => {
   );
 };
 
+const EventTags = ({ tags }: { tags: string[] }) => {
+  if (!tags.length) return null;
+  return (
+    <div className="mt-5 flex flex-row flex-wrap gap-2">
+      {tags.map((tag, index) => (
+        <span key={`${tag}-${index}`} className="pill">
+          #{tag}
+        </span>
+      ))}
+    </div>
+  );
+};
 
-
+/**
+ * Same as `JSON.parse(values[0])` for tags/agenda saved as one JSON string in the first slot;
+ * falls back to a normal Mongoose string[] when that cell is not JSON.
+ */
+function itemsFromJSONParseFirst(values: string[] | undefined): string[] {
+  if (!values?.length) return [];
+  try {
+    const parsed = JSON.parse(values[0]) as unknown;
+    return Array.isArray(parsed)
+      ? parsed.map((item) => String(item).trim()).filter(Boolean)
+      : [];
+  } catch {
+    return values.map((item) => String(item).trim()).filter(Boolean);
+  }
+}
 
 const EventDetailsPage = async ({
   params,
@@ -74,7 +104,10 @@ const EventDetailsPage = async ({
   const baseUrl = host
     ? `${protocol}://${host}`
     : process.env.NEXT_PUBLIC_BASE_URL;
-  if (!baseUrl) throw new Error("Missing base URL for event details request.");
+  if (!baseUrl) {
+    console.error("Missing base URL for event details request.");
+    return notFound();
+  }
 
   const request = await fetch(
     `${baseUrl}/api/events/${encodeURIComponent(slug)}`,
@@ -106,35 +139,23 @@ const EventDetailsPage = async ({
 
   if (!description) return notFound();
 
-  const normalizedAgenda = Array.isArray(agenda)
-    ? agenda
-        .map((item) => String(item).trim())
-        .filter(Boolean)
-    : [];
-  const normalizedTags = Array.isArray(tags)
-    ? tags
-        .map((item) => String(item).trim())
-        .filter(Boolean)
-    : [];
+  const agendaItems = itemsFromJSONParseFirst(agenda);
+
+
+
+  const bookings = 10 
 
   return (
     <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-10">
       <section id="event" className="space-y-8">
         <div className="header rounded-2xl border border-white/10 bg-black/25 p-6 sm:p-8">
-          <p className="text-sm uppercase tracking-[0.2em] text-primary">Developer Event</p>
+          <p className="text-sm uppercase tracking-[0.2em] text-primary">
+            Developer Event
+          </p>
           <h1 className="mt-3">{title ?? "Event Details"}</h1>
           <p className="mt-4 text-light-100/95">{description}</p>
-          {normalizedTags.length > 0 ? (
-            <div className="mt-5 flex flex-wrap gap-2">
-              {normalizedTags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
-                >
-                  #{tag}
-                </span>
-              ))}
-            </div>
+          {tags?.length ? (
+            <EventTags tags={itemsFromJSONParseFirst(tags)} />
           ) : null}
         </div>
 
@@ -195,23 +216,30 @@ const EventDetailsPage = async ({
                 label={mode}
               />
             </section>
-            <EventAgenda agendaItems={normalizedAgenda} />
+            <EventAgenda agendaItems={agendaItems} />
           </div>
 
           {/* rightside booking information */}
           <aside className="booking lg:sticky lg:top-24">
             <div className="signup-card rounded-2xl border border-white/10 bg-black/30 p-6">
-              <p className="text-xs uppercase tracking-[0.18em] text-light-200">Registration</p>
-              <p className="mt-2 text-2xl font-semibold">Book your spot now</p>
-              <p className="mt-3 text-sm text-light-200">
-                Seats are limited. Register early to reserve your place and receive event updates.
+              <p className="text-xs uppercase tracking-[0.18em] text-light-200">
+                Registration
               </p>
-              <button
-                type="button"
-                className="mt-6 w-full rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-black transition hover:bg-primary/90"
-              >
-                Register Interest
-              </button>
+              <p className="mt-2 text-2xl font-semibold">Book your spot now</p>
+              {bookings > 0 ? (
+                <p className="mt-3 text-sm text-light-200">
+                  Seats are limited. Register early to reserve your place and
+                  receive event updates.
+                </p>
+              ) : (
+                  <p className="mt-3 text-sm text-light-200">
+                    Be among the first to register.
+                  </p>
+              )}
+              <BookEvent
+                eventSlug={slug}
+                initialBookingCount={bookings}
+              />
             </div>
           </aside>
         </div>

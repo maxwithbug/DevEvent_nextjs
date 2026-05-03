@@ -9,15 +9,18 @@ import { IEvent } from "@/database";
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL
 
 const Home = async () => {
-  const response = await fetch(`${BASE_URL}/api/events`);
-  console.log("API Response:", response);
-  if (!response.ok) {
-    console.error("Failed to fetch events:", response.statusText);
+  let events: IEvent[] = [];
+  try {
+    const response = await fetch(`${BASE_URL}/api/events`);
+    if (!response.ok) {
+      throw new Error(response.statusText);
+    }
+    const data = await response.json();
+    events = data.events ?? [];
+  } catch (error) {
+    console.error("Failed to fetch events:", error);
     return <p className="text-center mt-10">Failed to load events. Please try again later.</p>;
   }
-
-  const {events} = await response.json();
-
 
   return (
     <section>
