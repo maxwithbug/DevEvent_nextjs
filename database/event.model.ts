@@ -6,7 +6,7 @@ import {
   models,
 } from "mongoose";
 
-interface IEvent {
+export interface IEvent {
   title: string;
   slug: string;
   description: string;
@@ -43,15 +43,11 @@ const toSlug = (value: string): string =>
 
 const normalizeDateToIso = (value: string): string => {
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!match) {
-    throw new Error("Date must be a valid date string.");
-  }
-
+  if (!match) throw new Error("Date must be a valid date string.");
   const year = Number(match[1]);
   const month = Number(match[2]);
   const day = Number(match[3]);
   const utcDate = new Date(Date.UTC(year, month - 1, day));
-
   if (
     utcDate.getUTCFullYear() !== year ||
     utcDate.getUTCMonth() !== month - 1 ||
@@ -59,53 +55,30 @@ const normalizeDateToIso = (value: string): string => {
   ) {
     throw new Error("Date must be a valid date string.");
   }
-
-  return `${String(year).padStart(4, "0")}-${String(month).padStart(
-    2,
-    "0"
-  )}-${String(day).padStart(2, "0")}`;
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 };
 
 const normalizeTime = (value: string): string => {
   const normalizedInput = value.trim().toLowerCase();
-  const twelveHourMatch = normalizedInput.match(
-    /^(\d{1,2}):(\d{2})\s*(am|pm)$/
-  );
-
+  const twelveHourMatch = normalizedInput.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/);
   if (twelveHourMatch) {
     let hours = Number(twelveHourMatch[1]);
     const minutes = Number(twelveHourMatch[2]);
     const period = twelveHourMatch[3];
-
-    if (hours < 1 || hours > 12 || minutes > 59) {
+    if (hours < 1 || hours > 12 || minutes > 59)
       throw new Error("Time must be a valid 12-hour clock value.");
-    }
-
     if (period === "pm" && hours !== 12) hours += 12;
     if (period === "am" && hours === 12) hours = 0;
-
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
-      2,
-      "0"
-    )}`;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
   }
-
   const twentyFourHourMatch = normalizedInput.match(/^(\d{1,2}):(\d{2})$/);
-  if (!twentyFourHourMatch) {
+  if (!twentyFourHourMatch)
     throw new Error("Time must be in HH:mm or h:mm AM/PM format.");
-  }
-
   const hours = Number(twentyFourHourMatch[1]);
   const minutes = Number(twentyFourHourMatch[2]);
-
-  if (hours > 23 || minutes > 59) {
+  if (hours > 23 || minutes > 59)
     throw new Error("Time must be a valid 24-hour clock value.");
-  }
-
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
-    2,
-    "0"
-  )}`;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 };
 
 const EventSchema = new Schema<IEvent>(
@@ -207,78 +180,38 @@ const EventSchema = new Schema<IEvent>(
   }
 );
 
-EventSchema.pre("save", function (next) {
+EventSchema.pre("save", async function () {
   const doc = this as EventDocument;
 
-  // Enforce non-empty required scalar fields before persistence.
-  const requiredFields: Array<keyof Pick<
-    IEvent,
-    | "title"
-    | "description"
-    | "overview"
-    | "image"
-    | "venue"
-    | "location" 
-    | "date"
-    | "time"
-    | "mode"
-    | "audience"
-    | "organizer"
-  >> = [
-    "title",
-    "description",
-    "overview",
-    "image",
-    "venue",
-    "location",
-    "date",
-    "time",
-    "mode",
-    "audience",
-    "organizer",
-  ];
+  const requiredFields = [
+    "title", "description", "overview", "image", "venue",
+    "location", "date", "time", "mode", "audience", "organizer",
+  ] as const;
 
   for (const field of requiredFields) {
     if (doc[field].trim().length === 0) {
-      return next(new Error(`${field} is required.`));
+      throw new Error(`${field} is required.`);
     }
   }
 
   if (doc.agenda.length === 0 || doc.agenda.some((item) => item.trim() === "")) {
-    return next(new Error("Agenda must contain at least one non-empty item."));
+    throw new Error("Agenda must contain at least one non-empty item.");
   }
 
   if (doc.tags.length === 0 || doc.tags.some((item) => item.trim() === "")) {
-    return next(new Error("Tags must contain at least one non-empty item."));
+    throw new Error("Tags must contain at least one non-empty item.");
   }
 
-  // Keep URL slug in sync with title, but only when title changes.
   if (doc.isModified("title")) {
     const slug = toSlug(doc.title);
-    if (!slug) {
-      return next(new Error("Title must contain slug-compatible characters."));
-    }
+    if (!slug) throw new Error("Title must contain slug-compatible characters.");
     doc.slug = slug;
   }
 
-  // Normalize date and time into a consistent storage format.
-  try {
-    if (doc.isModified("date")) {
-      doc.date = normalizeDateToIso(doc.date);
-    }
-    if (doc.isModified("time")) {
-      doc.time = normalizeTime(doc.time);
-    }
-    return next();
-  } catch (error) {
-    if (error instanceof Error) {
-      return next(error);
-    }
-    return next(new Error("Invalid date or time value."));
-  }
+  if (doc.isModified("date")) doc.date = normalizeDateToIso(doc.date);
+  if (doc.isModified("time")) doc.time = normalizeTime(doc.time);
 });
 
 const Event: Model<IEvent> = models.Event || model<IEvent>("Event", EventSchema);
 
 export { Event };
-export type { IEvent };

@@ -31,7 +31,16 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn("min-h-screen", "h-full", "antialiased", "suppresshydrationwarning", SchibstedGrotesk.variable, MartianMono.variable, "font-sans", geist.variable)}
+      suppressHydrationWarning
+      className={cn(
+        "min-h-screen",
+        "h-full",
+        "antialiased",
+        SchibstedGrotesk.variable,
+        MartianMono.variable,
+        "font-sans",
+        geist.variable
+      )}
     >
 
 
