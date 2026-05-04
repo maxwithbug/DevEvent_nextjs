@@ -3,7 +3,9 @@ import React from "react";
 import { headers } from "next/headers";
 import Image from "next/image";
 import BookEvent from "@/components/BookEvent";
-
+import { IEvent } from "@/database";
+import { getsimilarEventsBySlug } from "@/lib/actions/event.action";
+import EventCard from "@/components/EventCard";
 
 type EventDetail = {
   title?: string;
@@ -88,11 +90,11 @@ function itemsFromJSONParseFirst(values: string[] | undefined): string[] {
   }
 }
 
-const EventDetailsPage = async ({
+export default async function EventDetailsPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
-}) => {
+}) {
   // Extract the slug from the route parameters and trim any whitespace
   const { slug: rawSlug } = await params;
   const slug = rawSlug?.trim();
@@ -141,10 +143,13 @@ const EventDetailsPage = async ({
 
   const agendaItems = itemsFromJSONParseFirst(agenda);
 
+  const bookingCountPayload = payload?.bookingCount;
+  const safeBookingCount =
+    typeof bookingCountPayload === "number" && Number.isFinite(bookingCountPayload)
+      ? bookingCountPayload
+      : 0;
 
-
-  const bookings = 10 
-
+  const similarEvents: IEvent[] = await getsimilarEventsBySlug(slug);
   return (
     <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-10">
       <section id="event" className="space-y-8">
@@ -226,26 +231,74 @@ const EventDetailsPage = async ({
                 Registration
               </p>
               <p className="mt-2 text-2xl font-semibold">Book your spot now</p>
-              {bookings > 0 ? (
-                <p className="mt-3 text-sm text-light-200">
-                  Seats are limited. Register early to reserve your place and
-                  receive event updates.
-                </p>
-              ) : (
-                  <p className="mt-3 text-sm text-light-200">
-                    Be among the first to register.
-                  </p>
-              )}
               <BookEvent
                 eventSlug={slug}
-                initialBookingCount={bookings}
+                initialBookingCount={safeBookingCount}
               />
             </div>
           </aside>
         </div>
+
+
+        {similarEvents.length > 0 ? (
+          <aside
+            aria-labelledby="similar-events-heading"
+            className="similar-events relative isolate mt-12 overflow-hidden rounded-3xl border border-white/[0.08] bg-gradient-to-br from-black/55 via-black/35 to-black/60 p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] sm:p-8"
+          >
+            <div
+              className="pointer-events-none absolute -right-20 -top-28 h-[22rem] w-[22rem] rounded-full bg-primary/12 blur-[100px]"
+              aria-hidden
+            />
+            <div
+              className="pointer-events-none absolute -bottom-24 -left-16 h-[18rem] w-[18rem] rounded-full bg-[color:var(--color-blue)]/15 blur-[90px]"
+              aria-hidden
+            />
+
+            <header className="relative flex flex-col gap-6 border-b border-white/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
+              <div className="max-w-xl space-y-2">
+                <p className="text-xs font-medium uppercase tracking-[0.28em] text-primary">
+                  Discover more
+                </p>
+                <h2
+                  id="similar-events-heading"
+                  className="font-schibsted-grotesk text-2xl font-bold leading-snug text-light-100 sm:text-3xl"
+                >
+                  Similar events
+                </h2>
+                <p className="text-sm leading-relaxed text-light-200">
+                  Other events picked from shared themes so you never miss what
+                  matters.
+                </p>
+              </div>
+              <p className="flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-black/50 px-4 py-2.5 text-sm text-light-200 backdrop-blur-sm tabular-nums">
+                <span className="font-semibold text-light-100">
+                  {similarEvents.length}
+                </span>
+                <span className="text-light-200">
+                  {similarEvents.length === 1 ? "matching event" : "matching events"}
+                </span>
+              </p>
+            </header>
+
+            <ul className="events relative mt-8" role="list">
+              {similarEvents.map((item) => (
+                <li key={item.slug} className="list-none">
+                  <EventCard
+                    title={item.title}
+                    image={item.image}
+                    slug={item.slug}
+                    location={item.location}
+                    date={item.date}
+                    time={item.time}
+                    className="h-full rounded-2xl border border-white/[0.06] bg-black/35 p-4 shadow-[0_22px_50px_-32px_rgba(0,0,0,0.9)] backdrop-blur-sm transition-colors duration-300 hover:border-primary/35 hover:bg-black/45 hover:shadow-[0_28px_60px_-24px_rgba(89,222,202,0.14)]"
+                  />
+                </li>
+              ))}
+            </ul>
+          </aside>
+        ) : null}
       </section>
     </div>
   );
-};
+}
 
-export default EventDetailsPage;

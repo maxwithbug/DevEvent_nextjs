@@ -58,8 +58,8 @@ export async function POST(request: NextRequest) {
         // const agenda = JSON.parse(fields.agenda as string) as string[];
         // const tags = JSON.parse(fields.tags as string) as string[];
 
-
-        // Handle file upload
+        let  tags = JSON.parse(formData.get("tags") as string) as string[];
+        let agenda = JSON.parse(formData.get("agenda") as string) as string[];
         try {
             const file = formData.get("image") as File;
             if (!file) {
@@ -100,8 +100,8 @@ export async function POST(request: NextRequest) {
         try {
             const createdEvent = await Event.create({
                 ...event,
-                // agenda,
-                //  tags,
+                agenda,
+                 tags,
             });
             return NextResponse.json(
                 { message: "Event created successfully", event: createdEvent },
