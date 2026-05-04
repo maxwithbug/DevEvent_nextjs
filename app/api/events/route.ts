@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
 //get all events
 export async function GET(request: NextRequest) {
     try {
-        connectToDatabase();
+        await connectToDatabase();
         const events = await Event.find().sort({ createdAt: -1 });
         return NextResponse.json({ message: "Events fetched successfully", events });
 
