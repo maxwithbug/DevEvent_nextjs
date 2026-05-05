@@ -3,7 +3,7 @@ import connectToDatabase from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
 
 interface RouteParams {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ slug: string; }>;
 }
 
 const isValidSlug = (value: string): boolean =>
@@ -14,7 +14,7 @@ function isMongoDuplicate(error: unknown): boolean {
     typeof error === "object" &&
     error !== null &&
     "code" in error &&
-    (error as { code: number }).code === 11000
+    (error as { code: number; }).code === 11000
   );
 }
 
